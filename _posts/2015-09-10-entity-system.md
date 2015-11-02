@@ -5,7 +5,6 @@ description: ""
 category: 
 tags: [game]
 ---
-{% include JB/setup %}
 
 #Entity System
 最近在网上看到一个游戏框架，[Ash](http://www.ashframework.org/),作者Richard Lord在自己的博客上也对这个框架做了介绍，看过之后算是对中基于组件的架构有了些认识。
