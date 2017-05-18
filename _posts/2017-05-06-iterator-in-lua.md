@@ -7,7 +7,7 @@ title: Iterator in Lua
 
 這裏說一些Lua中的迭代器。很多語言中都有迭代器這個概念，早期在學校學C++ 的時候就接觸過，後面在Java 裏面也看到了，再後來在C#裏面也看到了，如今在Lua中又見到了。
 
-JAVA和C++ 太久遠了，已經記不清楚了。在C#中，和枚舉有關的概念有兩個，一個是可枚舉接口 `IEnumerable`  和 枚舉器（迭代器） `IEnumerator` ，一個集合要想可以被枚舉，就必須要實現 `IEnumerable` 這個接口，而這個接口中定義了方法 `GetEnumerator` ，返回類型爲迭代器 `IEnumerator` ，迭代器就像是一個函數，這個函數保存了當前迭代的位置信息，每次當這個函數調用的時候，它就返回當前位置的元素，然後將位置信息加一。**在C#中實現迭代器需要同時實現 `IEnumerable` 和 `IEnumerator` 這兩個接口。**在 Lua中也有類似的概念，實現`IEnumerable`  接口就是給這種類型寫一個迭代器，然後這個迭代器就可以在 `for`  語句中使用了， 就像C#中的 `foreach` 一樣。
+JAVA和C++ 太久遠了，已經記不清楚了。在C#中，和枚舉有關的概念有兩個，一個是可枚舉接口 `IEnumerable`  和 枚舉器（迭代器） `IEnumerator` ，一個集合要想可以被枚舉，就必須要實現 `IEnumerable` 這個接口，而這個接口中定義了方法 `GetEnumerator` ，返回類型爲迭代器 `IEnumerator` ，迭代器就像是一個函數，這個函數保存了當前迭代的位置信息，每次當這個函數調用的時候，它就返回當前位置的元素，然後將位置信息加一。**在C#中實現迭代器需要同時實現 `IEnumerable` 和 `IEnumerator` 這兩個接口 [^1]。**在 Lua中也有類似的概念，實現`IEnumerable`  接口就是給這種類型寫一個迭代器，然後這個迭代器就可以在 `for`  語句中使用了， 就像C#中的 `foreach` 一樣。
 
 那麼Lua中的迭代器如何寫呢？類似於C#中的 `GetEnumerator` ,這個函數就像是一個工廠函數，它產生一個迭代器，Lua中也需要一個這樣的工廠函數，例如下面：
 
@@ -76,3 +76,6 @@ end
 
 
 同樣需要注意的是，迭代器只用予迭代，不能在迭代過程中去修改被迭代的集合。這幾乎在所有語言裏面都是一樣的。
+
+
+[^1]: [也可以使用yield 關鍵字](https://docs.microsoft.com/en-us/dotnet/articles/csharp/language-reference/keywords/yield)
