@@ -39,3 +39,17 @@ validation-report.json
 
 # Folders to ignore
 node_modules
+Thumbs.db
+!.gitkeep
+.rbenv-version
+.rvmrc
+_site
+.DS_Store
+.jekyll
+.bundle
+.sass-cache
+Gemfile
+Gemfile.lock
+node_modules
+package.json
+_drafts
