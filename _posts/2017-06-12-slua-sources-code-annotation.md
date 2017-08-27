@@ -1,6 +1,7 @@
 ---
 layout: post
 title: slua 代码阅读
+tags : [programming]
 ---
 [slua](https://github.com/pangweiwei/slua) 的代码看了有一段时间了，基本上是了解了它的工作原理，我将自己对代码的注释放在了 [github 上面](https://github.com/haolly/slua_source_note)，其中有很多 **TODO:** 的标记，都是我刚开始看的时候有疑惑的地方，后面慢慢的看懂后就逐个将这些标记去掉，不过还有一些没有消灭掉，等有空在继续看。先把笔记写下来
 

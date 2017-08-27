@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Iterator in Lua
+tags : [programming]
 ---
 
 最近在看 [Slua](https://github.com/pangweiwei/slua) 的代碼，因爲現在做的項目中使用到了它，在看的過程中逐漸的對 Lua 的理解越來越清晰。

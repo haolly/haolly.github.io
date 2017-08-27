@@ -1,6 +1,5 @@
 ---
 layout: post
-category : gamed
 title : 怎么写一个技能系统
 tags : [gamedev]
 ---
