@@ -1,6 +1,5 @@
 ---
 layout: post
-category : gamedev
 title : 关于游戏服务器端框架的思考
 tags : [gamedev]
 ---
