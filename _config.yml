@@ -21,7 +21,7 @@ paginate:         5
 
 # Custom vars
 version:          2.1.0
-gems:
+plugins:
    - jekyll-feed # Create an Atom feed using the official Jekyll feed gem
    - jekyll-sitemap # Create a sitemap using the official Jekyll sitemap gem
    - jekyll-paginate
