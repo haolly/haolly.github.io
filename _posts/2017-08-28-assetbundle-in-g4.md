@@ -3,10 +3,13 @@ layout: post
 title : AssetBundle 在项目中的使用
 tags : [gamedev]
 ---
+**Update in 2018: 这篇主要是对旧项目中使用的老同事的作品 [KEngine](https://github.com/mr-kelly/KEngine) 的代码说明，参考价值不大**
+
 主要代码在KAssetBundleLoader文件中  
 HotBytesLoader 用于下载字节文件
 
 **加载Bundle A流程**
+
 1. 用byteloader 加载对应平台的 **AssetBundleManifest** 
   ref: "load that additional AssetBundle (the one that’s named the same thing as the folder it’s in) and load an object of type AssetBundleManifest from it."
 2. 用AssetBundleLoader加载依赖的bundle B
