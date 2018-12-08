@@ -9,7 +9,7 @@ permalink:        pretty
 title:            A webblog
 tagline:          'A Jekyll theme'
 description:      '刘浩，又一个程序员<br>我的座右铭:<br>世界上只有一种英雄主义,就是看清生活的真相之后依然热爱生活'
-url:              http://haolly.com
+url:              https://haolly.com
 #baseurl:          /
 baseurl:          ''
 
@@ -32,5 +32,6 @@ github:
 
 # Enter your Disqus shortname (not your username) to enable commenting on posts
 # You can find your shortname on the Settings page of your Disqus account
-disqus: haolly
+# disqus: haolly
+livere: true
 # excerpt_separator: "<!--excerpt-->"

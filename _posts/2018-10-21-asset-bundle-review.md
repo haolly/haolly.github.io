@@ -32,7 +32,7 @@ meta 文件是 editor 下记录引用关系的，bundle 里面不需要用到，
 
 
 
-**NOTE:** 
+**NOTE:**
 默认情况下，builtin shader不会被单独打成一个bundle。如果多个 prefab 依赖于 default-mat，这个 default-mat 就会重复。
 解决办法就是下载一份当前 unity 版本的 builtin shader 到工程目录，这样内置 shader 就会引用下载的 builtin shader。shader 最后单独打成一个 AB。
 
@@ -53,47 +53,62 @@ meta 文件是 editor 下记录引用关系的，bundle 里面不需要用到，
 
 ## 更新策略
 
-首先找出哪些文件是新增的或是有修改过的，这个可以通过项目 SVN 记录来找到，当前的 SVN commit version 和上一个 SVN commit reversion ，可以通过第三方库例如pysvn 来简化工作。   
+首先找出哪些文件是新增的或是有修改过的，这个可以通过项目 SVN 记录来找到，当前的 SVN commit version 和上一个 SVN commit reversion ，可以通过第三方库例如pysvn 来简化工作。
 如果一个UI prefab 依赖于一个 atlas shared.png, 这个 shared.png 再后面的版本中有修改，那么这个修改不会导致原来的 ui prefab 发生改变；
-一个角色材质的改变也不会导致使用这个材质的角色prefab 发生改变；记录sprite 的.asset 文件(ie, catalog) 也不会因为原始图片的改变而改变；所以 patch 的时候需要找到所有依赖于这些文件的父文件，对其重新打包。   
+一个角色材质的改变也不会导致使用这个材质的角色prefab 发生改变；记录sprite 的.asset 文件(ie, catalog) 也不会因为原始图片的改变而改变；所以 patch 的时候需要找到所有依赖于这些文件的父文件，对其重新打包。
 主要分为两步:
+
 ##### Step One， 找出被谁依赖
+<pre>
 如果是root文件
-​	打这个文件的 patch
-​	遍历所有的 bundle，找出依赖于这个文件的 bundle
-​		找出这个 bundle 中依赖于这个文件的文件
-​			打这个文件的 patch
-​	
+	打这个文件的 patch
+	遍历所有的 bundle，找出依赖于这个文件的 bundle
+		找出这个 bundle 中依赖于这个文件的文件
+			打这个文件的 patch
+
 如果不是顶层文件，（例如 Asset/Raw 等目录）
-​	遍历所有的 bundle，找出依赖于这个文件的 bundle
-​		找出这个 bundle 中依赖于这个文件的文件
-​			打这个文件的 patch
+	遍历所有的 bundle，找出依赖于这个文件的 bundle
+		找出这个 bundle 中依赖于这个文件的文件
+			打这个文件的 patch
+</pre>
 
 ##### Step Two, 找出依赖于谁
+<pre>
 打某个文件的 patch:
 找出这个文件所对应的 patch bundle P
 找出这个文件所对应的 bundle oldP
 找出这个文件的所有依赖项，遍历
-​	如果依赖项在changeSet 里面
-​		如果依赖项是顶层文件
-​			不用管，因为已经在 bundle 里面了
-​			or，如果是贴图或者动画，单独打一个 bundle 作为 P 的依赖 bundle
-​		如果依赖项不是顶层文件
-​			加入到 P 里面。（TODO， 这里会有重复）
-​			or，如果是贴图或者动画，单独打一个 bundle 作为 P 的依赖 bundle
-​	
-​	如果依赖项没有在changeSet 里面，即在旧包里面，设 依赖项为 xOld  (TODO, 后面的应该不用管了)
-​		找出 xOld 的依赖项，遍历
-​			如果依赖项在 changeSet 里面，即依赖有修改
-​				如果依赖项是顶层资源
-​					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle，被依赖的顶层资源就不用管了，反正已经打到 bundle 里面去了
-​				如果依赖项不是顶层资源
-​					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle，被依赖的项加入到 patch bundle 中。（TODO, 这里会有重复）
-​				dirty = true;
-​				break;
-​			如果依赖项没有在 changeSet 里面
-​				do nothing
-​		如果not dirty, 即xOld 的所有依赖项都在旧包里面
-​			do nothing
+	如果依赖项在changeSet 里面
+		如果依赖项是顶层文件
+			不用管，因为已经在 bundle 里面了
+			or，如果是贴图或者动画，单独打一个 bundle 作为 P 的依赖 bundle
+		如果依赖项不是顶层文件
+			加入到 P 里面。（TODO， 这里会有重复）
+			or，如果是贴图或者动画，单独打一个 bundle 作为 P 的依赖 bundle
+
+	如果依赖项没有在changeSet 里面，即在旧包里面，设 依赖项为 xOld ^ note 1
+		找出 xOld 的依赖项，遍历
+			如果依赖项在 changeSet 里面，即依赖有修改
+				如果依赖项是顶层资源
+					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle，被依赖的顶层资源就不用管了，反正已经打到 bundle 里面去了
+				如果依赖项不是顶层资源
+					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle，被依赖的项加入到 patch bundle 中。（TODO, 这里会有重复）
+				dirty = true;
+				break;
+			如果依赖项没有在 changeSet 里面
+				do nothing
+		如果not dirty, 即xOld 的所有依赖项都在旧包里面
+			do nothing
+</pre>
+
+note 1:
+这里其实是为了处理一些特殊的资源，例如我们项目中使用 `ScriptableObject` 来存储 `Sprite` 信息，类似于一个 catalog，这个 `ScriptableObject` 是在编辑器中创建的，
+例如 catalog.asset, 它记录了哪个 sprite 在哪个 png 文件中，以用于运行时加载。注，运行时加载 .asset 文件即可。
 
 对于patch bundle，导出一个类似于 manifest 的文件，例如 patch_res.json，记录所有bundle 的文件名和md5 值，每次游戏启动的时候就去检查有没有新的 patch bundle 可以下载，本地已经有的 patch bundle 全不全，md5 值是不是一样，如果不全或者md5 值不一样，则需要重新下载这个 patch bundle。
+
+
+## 怎么知道哪个文件在哪个 bundle 里面？
+打完 bundle 需要导出一份文件，里面记录了每个 bundle 所包含的文件，所以加载文件的时候就可以反向查找 bundle，然后加载 bundle，再加载文件了。
+
+
