@@ -13,7 +13,7 @@ tags: [dev]
 
 ## 打包策略
 
-首先要考虑的是哪些资源文件打到同一个 Bundle 里面去，如何做拆分，这里因人而异。有的是按照目录结构，同一个目录下面的所有文件打包到同一个 Bundle 里面去，上面提到的 KEngine 就是这种策略，至少那时候是；有的是按照资源类型，例如每个 UI Prefab 打成一个 Bundle，所有的字体和 Shader 分别打包成一个 Bundle；有的按照使用场景，例如同一个NPC 打包成一个 Bundle，一个副本场景Scene 打包成一个 Bundle；我们把这些文件叫做 root 文件，因为使用中他们往往就是需要 `LoadAsset` 出来使用的；实际项目中往往是多种并存的，例如一个配置文件 A 目录下面的 *.prefab 文件都是 root 文件。
+首先要考虑的是哪些资源文件打到同一个 Bundle 里面去，如何做拆分，这里因人而异。有的是按照目录结构，同一个目录下面的所有文件打包到同一个 Bundle 里面去，以前使用的 KEngine 就是这种策略，至少那时候是；有的是按照资源类型，例如每个 UI Prefab 打成一个 Bundle，所有的字体和 Shader 分别打包成一个 Bundle；有的按照使用场景，例如同一个NPC 打包成一个 Bundle，一个副本场景Scene 打包成一个 Bundle；我们把这些文件叫做 root 文件，因为使用中他们往往就是需要 `LoadAsset` 出来使用的；实际项目中往往是多种并存的，例如一个配置文件 A 目录下面的 *.prefab 文件都是 root 文件。
 
 实际项目中是不可能手动去 editor 中设置 bundle name 的，一般会用AssetImporter 或者AssetBundleBuild 类来在代码里面设置 bundle name，后者用的比较多。
 
@@ -28,7 +28,7 @@ meta 文件是 editor 下记录引用关系的，bundle 里面不需要用到，
 
 这里可以抽象出一个类 `BundleCandidate`，每一个Asset 都是`BundleCandidate`，这个类记录了她所依赖的其他`BundleCandidate` 和依赖于她的`BundleCandidate`，这个类有三种类型，root，rawAsset，standalone， 当依赖于她自己的`BundleCandidate` 数目大于1的时候，rawAsset 类型提升为 standalone 类型，表示需要单独打AB包，root 类型也需要单独打 AB 包。
 
-最后需要注意的一点就是，开发环境一般用Resources 目录的方式加载资源，因为这样快速，不用每次修改后去打 bundle 才能看到最终效果，正式版使用 bundle 方式加载资源，所以，打包 APP 的工程一般会和开发工程不是同一个，打包 APP 的工程 Resources 目录只保留游戏启动所需的最少的资源。
+最后需要注意的一点就是，开发环境一般用Resources 目录的方式加载资源，因为这样快速，不用每次修改后去打 bundle 才能看到最终效果，正式版使用 bundle 方式加载资源，所以，游戏中要做一个资源加载的抽象接口，有 Resources 和 Bundle 两种实现类型；打包 APP 的工程一般会和开发工程不是同一个，打包 APP 的工程 Resources 目录只保留游戏启动所需的最少的资源。
 
 
 
@@ -53,62 +53,77 @@ meta 文件是 editor 下记录引用关系的，bundle 里面不需要用到，
 
 ## 更新策略
 
-首先找出哪些文件是新增的或是有修改过的，这个可以通过项目 SVN 记录来找到，当前的 SVN commit version 和上一个 SVN commit reversion ，可以通过第三方库例如pysvn 来简化工作。
+首先找出哪些文件是新增的或是有修改过的，这个可以通过项目 SVN 记录来找到，当前的 SVN commit version 和项目正式上线时候的 SVN commit reversion 做对比 ，可以通过第三方库例如 [pysvn](<http://pysvn.tigris.org/>) 来简化工作。项目上线之时的 commit reversion 会是一个固定值。
 如果一个UI prefab 依赖于一个 atlas shared.png, 这个 shared.png 再后面的版本中有修改，那么这个修改不会导致原来的 ui prefab 发生改变；
 一个角色材质的改变也不会导致使用这个材质的角色prefab 发生改变；记录sprite 的.asset 文件(ie, catalog) 也不会因为原始图片的改变而改变；所以 patch 的时候需要找到所有依赖于这些文件的父文件，对其重新打包。
 主要分为两步:
 
 ##### Step One， 找出被谁依赖
 <pre>
-如果是root文件
-	打这个文件的 patch
-	遍历所有的 bundle，找出依赖于这个文件的 bundle
-		找出这个 bundle 中依赖于这个文件的文件
-			打这个文件的 patch
-
-如果不是顶层文件，（例如 Asset/Raw 等目录）
-	遍历所有的 bundle，找出依赖于这个文件的 bundle
-		找出这个 bundle 中依赖于这个文件的文件
-			打这个文件的 patch
+foreach file in changeSet:
+    如果是root文件
+        打这个文件的 patch
+    遍历所有的 bundle，找出依赖于这个文件的 所有的bundles A，遍历 A
+        找出这个 bundle 中依赖于这个文件的文件B
+        	打这个文件B的 patch
 </pre>
+root文件就是需要被第一次bundle 打进去的文件，可能会分布在不同的assets子目录中，并且会有不同的命名规则，例如texture atlas 和ui prefab ，ui  atlas 等；新增加的root文件会根据规则打进一个新包或者作为依赖被添加。changeSet 就是通过 svn 差异对比出来有变化(新增，修改)的文件集合。
 
-##### Step Two, 找出依赖于谁
+
+##### Step Two, 找出依赖于谁，判断它所依赖的文件是否需要重新打 patch bundle
 <pre>
 打某个文件的 patch:
-找出这个文件所对应的 patch bundle P
-找出这个文件所对应的 bundle oldP
-找出这个文件的所有依赖项，遍历
-	如果依赖项在changeSet 里面
+找出或创建这个文件所对应的 patch bundle P。[NOTE 1]
+找出这个文件所对应的 bundle oldP，找最接近的
+找出这个文件file的所有依赖项file_dep，遍历
+	1. 如果依赖项在changeSet 里面
 		如果依赖项是顶层文件
-			不用管，因为已经在 bundle 里面了
+			不用管，因为 修改的root 文件会自己打一个patch bundle。TODO: 这里没有手动记录依赖
 			or，如果是贴图或者动画，单独打一个 bundle 作为 P 的依赖 bundle
 		如果依赖项不是顶层文件
-			加入到 P 里面。（TODO， 这里会有重复）
+			加入到 P 里面
 			or，如果是贴图或者动画，单独打一个 bundle 作为 P 的依赖 bundle
-
-	如果依赖项没有在changeSet 里面，即在旧包里面，设 依赖项为 xOld ^ note 1
-		找出 xOld 的依赖项，遍历
-			如果依赖项在 changeSet 里面，即依赖有修改
-				如果依赖项是顶层资源
-					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle，被依赖的顶层资源就不用管了，反正已经打到 bundle 里面去了
-				如果依赖项不是顶层资源
-					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle，被依赖的项加入到 patch bundle 中。（TODO, 这里会有重复）
+	2. 如果依赖项没有在changeSet 里面，即在旧包里面；按理来说，直接找出这个旧包作为P 的依赖就行了，但是，我们不能确定是否这个旧包的依赖发生变化导致这个旧包需要重新打 bundle；设 依赖项file_dep为 xOld (这里就是要检查依赖项 xOld 是否要被打包)
+		2.1 找出 xOld 的依赖项file_dep_dep，遍历
+			如果依赖项在 changeSet 里面，即依赖的依赖有修改
+				如果xOld是顶层资源 (root 文件)
+					给 xOld 单独打一个patch bundle，并作为 P 的依赖 bundle。[NOTE 2]
+				如果xOld不是顶层资源: 
+					加入到 P 里面
 				dirty = true;
-				break;
+				break，goto 2.2； 即，只要依赖的依赖中有修改，依赖就会被重新打包
 			如果依赖项没有在 changeSet 里面
 				do nothing
-		如果not dirty, 即xOld 的所有依赖项都在旧包里面
-			do nothing
+		2.2 如果not dirty, 即xOld 的所有依赖项都在旧包里面（更新 patch 对旧 bundle 的引用，**重点**）[NOTE 3]
+				2.2.1 如果oldP 存在，即找到file 所在的 bundle，并且 oldP 包含xOld，不管是直接包含或者是间接依赖包含。(怎么知道 oldP 包含 xOld 呢？当然是利用已有的 bundle 信息啦)
+					把 oldP 加入到。[NOTE 4]
+					把oldP 作为 P 的依赖 bundle
+				2.2.2 如果上一部不成立。执行，如果 oldP 存在，并且 oldP 依赖的 bundle 中的某一个包含了 xOld，那么把这个依赖 bundle 作为P 的依赖 bundle。
+				2.2.3 如果上面两个都不成立。找出 xOld 所对应的 bundle oldX，执行类似 2.2.1/2.2.2
+				2.2.4 如果找不到 oldX，说明 oldX 不是 root 文件，是贴图、动画等原子文件
+					2.2.4.1 如果是纹理或者 fbx，打 patch bundle 并加入 P 的依赖 ，如果不是，直接加入 P 中。
+
+
 </pre>
 
-note 1:
-这里其实是为了处理一些特殊的资源，例如我们项目中使用 `ScriptableObject` 来存储 `Sprite` 信息，类似于一个 catalog，这个 `ScriptableObject` 是在编辑器中创建的，
-例如 catalog.asset, 它记录了哪个 sprite 在哪个 png 文件中，以用于运行时加载。注，运行时加载 .asset 文件即可。
+[NOTE 1]：这一步是指找到 file 对应的 old bundle name，如果找到，新的 patch bundle name 就是 old bundle name 加后缀 .patch，如果没有找到，就创建对应的 .patch 文件按照起名规则；这里的新增一个 patch bundle 是指新增一个 bundle info，用来记录 bundle 信息的，包括它的名字和包含有哪些文件
 
-对于patch bundle，导出一个类似于 manifest 的文件，例如 patch_res.json，记录所有bundle 的文件名和md5 值，每次游戏启动的时候就去检查有没有新的 patch bundle 可以下载，本地已经有的 patch bundle 全不全，md5 值是不是一样，如果不全或者md5 值不一样，则需要重新下载这个 patch bundle。
+[NOTE 2]：对于 root 文件，如果能找到其所对应的 old bundle name，就 用加.patch 后缀的形式命名新的 patch bundle，如果不能，就按照规则来命名。
+
+[NOTE 3]：新的patch 要对旧bundle产生依赖，如果旧bundle 不和 patch一起重新打，path就不能记录到对旧bundle的依赖，因为没有办法去修改patch内部的依赖记录去让他指向旧bundle，而且，如果旧bundle 不重新打，这个依赖就会被重复包含在patch里面；
+需要注意的是，旧bundle的重新打，需要名字和原来的一样。
+
+[NOTE 4]：打 patch 的时候，跟 old bundle 名字一样的.bundle 文件是从哪一步出来的？ 就是这一步，找到原始的 bundle，并且把原始 bundle 所包含的文件加入到 同名的 bundle 里面去，还原 old bundle 的环境。最后，这些同名的bundle 只是为了更新引用，不会上传到服务器。
+
+我们项目中使用 `ScriptableObject` 来存储 `Sprite` 信息，类似于一个 catalog，这个 `ScriptableObject` 是在编辑器中创建的，
+例如 catalog.asset, 它记录了哪个 sprite 在哪个 png 文件中，以用于**运行时加载**。注，运行时加载 .asset 文件即可。
+
+对于patch bundle，导出一个类似于 manifest 的文件，例如 patch_res.json，记录所有bundle 的文件名和md5 值，然后上传到服务器，每次游戏启动的时候就去检查有没有新的 patch bundle 可以下载，本地已经有的 patch bundle 全不全，md5 值是不是一样，如果不全或者md5 值不一样，则需要重新下载这个 patch bundle。
+
+最后，自己手动记录的依赖信息可能不是很准确，所以可以通过 打 bundle 生成的 manifest 来修正。
 
 
 ## 怎么知道哪个文件在哪个 bundle 里面？
-打完 bundle 需要导出一份文件，里面记录了每个 bundle 所包含的文件，所以加载文件的时候就可以反向查找 bundle，然后加载 bundle，再加载文件了。
+打完 bundle 需要导出一份文件，里面记录了**每个 bundle** 所包含的文件，所以加载文件的时候就可以反向查找 bundle，然后加载 bundle，再加载文件了。
 
 
