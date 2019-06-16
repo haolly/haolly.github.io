@@ -54,9 +54,10 @@ Python + C#
 推荐直接用[pbxproj](https://pypi.org/project/pbxproj/) 
 
 ## cygwin 中 rsync 资源更新到服务器遇到的问题
-1. 权限问题，rsync 到Linux机器之后权限不对
-2. ssh key 问题
-3. 
+1. 权限问题，rsync 到Linux机器之后权限不对， edit C:\cygwin64\etc\fstab add `noacl`, 最后的结果就是 `none /cygdrive cygdrive noacl,binary,posix=0,user 0 0`
+2. ssh key 问题 https://superuser.com/questions/1296024/windows-ssh-permissions-for-private-key-are-too-open
+3. https://superuser.com/questions/1026073/cygwin-ssh-not-reading-config-file/1026123#1026123
+4. win10 自带ssh client 和 cygwin中的不兼容，所以不能使用自带的
 
 ## 重要的命令行参数
 ` -quit -batchmode -nographics -executeMethod AssetBuilder.StaticBuildMethod  -logFile logfile.log -projectPath ProjectRoot `
