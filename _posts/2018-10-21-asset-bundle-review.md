@@ -72,9 +72,9 @@ root文件就是需要被第一次bundle 打进去的文件，可能会分布在
 
 ##### Step Two, 找出依赖于谁，判断它所依赖的文件是否需要重新打 patch bundle
 <pre>
-打某个文件的 patch:
-找出或创建这个文件所对应的 patch bundle P。[NOTE 1]
-找出这个文件所对应的 bundle oldP，找最接近的
+打某个文件file的 patch:
+找出或创建这个文件file所对应的 patch bundle P。[NOTE 1]
+找出这个文件file所对应的 bundle oldP，找最接近的
 找出这个文件file的所有依赖项file_dep，遍历
 	1. 如果依赖项在changeSet 里面
 		如果依赖项是顶层文件
@@ -94,13 +94,13 @@ root文件就是需要被第一次bundle 打进去的文件，可能会分布在
 				break，goto 2.2； 即，只要依赖的依赖中有修改，依赖就会被重新打包
 			如果依赖项没有在 changeSet 里面
 				do nothing
-		2.2 如果not dirty, 即xOld 的所有依赖项都在旧包里面（更新 patch 对旧 bundle 的引用，**重点**）[NOTE 3]
+		2.2 如果not dirty, 即xOld(ie file 的依赖文件 file_dep) 的所有依赖项都在旧包里面并且没有发生变化（更新 patch 对旧 bundle 的引用，**重点**）[NOTE 3]
 				2.2.1 如果oldP 存在，即找到file 所在的 bundle，并且 oldP 包含xOld，不管是直接包含或者是间接依赖包含。(怎么知道 oldP 包含 xOld 呢？当然是利用已有的 bundle 信息啦)
-					把 oldP 加入到。[NOTE 4]
+					把 oldP 加入到 bundle build list里面。[NOTE 4]
 					把oldP 作为 P 的依赖 bundle
-				2.2.2 如果上一部不成立。执行，如果 oldP 存在，并且 oldP 依赖的 bundle 中的某一个包含了 xOld，那么把这个依赖 bundle 作为P 的依赖 bundle。
-				2.2.3 如果上面两个都不成立。找出 xOld 所对应的 bundle oldX，执行类似 2.2.1/2.2.2
-				2.2.4 如果找不到 oldX，说明 oldX 不是 root 文件，是贴图、动画等原子文件
+				2.2.2 如果上一步不成立，即没有找到oldP 或者oldP 不包含 xOld。执行，如果 oldP 存在，并且 oldP 依赖的 bundle 中的某一个包含了 xOld，那么把这个依赖 bundle 作为P 的依赖 bundle。
+				2.2.3 如果上面两个都不成立。找出 xOld 所对应的 bundle oldBDX，执行类似 2.2.1/2.2.2
+				2.2.4 如果找不到 oldBDX，说明 xOld 不是 root 文件，是贴图、动画等原子文件
 					2.2.4.1 如果是纹理或者 fbx，打 patch bundle 并加入 P 的依赖 ，如果不是，直接加入 P 中。
 
 
